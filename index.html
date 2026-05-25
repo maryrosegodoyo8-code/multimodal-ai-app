@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MultiModal AI — NLP Activity 10</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;}
+  :root{
+    --bg-primary:#ffffff;--bg-secondary:#f5f5f3;--bg-tertiary:#eceae4;
+    --text-primary:#1a1a1a;--text-secondary:#666;--text-hint:#999;
+    --border-light:rgba(0,0,0,0.1);--border-mid:rgba(0,0,0,0.18);
+    --accent:#534AB7;--accent-light:#EEEDFE;--accent-text:#3C3489;
+    --sidebar-bg:#f9f8f6;--bubble-ai:#fff;
+    --danger-bg:#FCEBEB;--danger-border:#F7C1C1;--danger-text:#A32D2D;
+  }
+  .dark{
+    --bg-primary:#1e1e1e;--bg-secondary:#2a2a2a;--bg-tertiary:#141414;
+    --text-primary:#e8e8e8;--text-secondary:#aaa;--text-hint:#666;
+    --border-light:rgba(255,255,255,0.08);--border-mid:rgba(255,255,255,0.14);
+    --accent:#7F77DD;--accent-light:#26215C;--accent-text:#AFA9EC;
+    --sidebar-bg:#252525;--bubble-ai:#2a2a2a;
+    --danger-bg:#3a1a1a;--danger-border:#5a2a2a;--danger-text:#F09595;
+  }
+  body{font-family:system-ui,sans-serif;background:var(--bg-tertiary);color:var(--text-primary);height:100vh;overflow:hidden;transition:background 0.2s,color 0.2s;}
+  .app{display:grid;grid-template-rows:52px 1fr;height:100vh;}
+
+  .header{display:flex;align-items:center;gap:10px;padding:0 16px;background:var(--bg-primary);border-bottom:0.5px solid var(--border-light);z-index:20;}
+  .logo{font-size:14px;font-weight:500;}
+  .logo span{opacity:0.4;}
+  .mode-tabs{display:flex;gap:3px;background:var(--bg-secondary);border-radius:8px;padding:3px;margin-left:12px;}
+  .mode-tab{padding:4px 12px;border-radius:6px;border:none;background:transparent;font-size:12px;cursor:pointer;color:var(--text-secondary);font-family:inherit;transition:all 0.15s;}
+  .mode-tab.active{background:var(--bg-primary);color:var(--text-primary);font-weight:500;box-shadow:0 1px 3px rgba(0,0,0,0.1);}
+  .header-right{display:flex;align-items:center;gap:6px;margin-left:auto;}
+  .icon-btn{width:32px;height:32px;border-radius:8px;border:0.5px solid var(--border-light);background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:15px;color:var(--text-secondary);transition:all 0.15s;}
+  .icon-btn:hover{background:var(--bg-secondary);}
+  .free-badge{font-size:10px;background:#EAF3DE;color:#3B6D11;border:0.5px solid #C0DD97;border-radius:10px;padding:2px 7px;font-weight:500;}
+
+  .main{display:grid;grid-template-columns:1fr;overflow:hidden;position:relative;}
+  .panel{display:none;height:100%;overflow:hidden;flex-direction:column;}
+  .panel.active{display:flex;}
+
+  .sidebar{position:absolute;top:0;left:-260px;width:260px;height:100%;background:var(--sidebar-bg);border-right:0.5px solid var(--border-light);z-index:15;transition:left 0.25s cubic-bezier(0.4,0,0.2,1);display:flex;flex-direction:column;}
+  .sidebar.open{left:0;}
+  .sidebar-header{padding:14px 16px 10px;border-bottom:0.5px solid var(--border-light);font-size:12px;font-weight:500;color:var(--text-secondary);display:flex;justify-content:space-between;align-items:center;}
+  .sidebar-clear{font-size:11px;color:var(--accent);cursor:pointer;background:none;border:none;font-family:inherit;padding:2px 4px;border-radius:4px;}
+  .sidebar-list{flex:1;overflow-y:auto;padding:8px;}
+  .sidebar-item{padding:8px 10px;border-radius:8px;cursor:pointer;margin-bottom:2px;transition:background 0.12s;}
+  .sidebar-item:hover{background:var(--bg-secondary);}
+  .sidebar-item .si-role{font-size:10px;color:var(--text-hint);font-weight:500;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:2px;}
+  .sidebar-item .si-text{font-size:12px;color:var(--text-primary);line-height:1.4;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;}
+  .sidebar-empty{padding:24px 16px;text-align:center;font-size:12px;color:var(--text-hint);}
+  .sidebar-overlay{position:absolute;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.25);z-index:14;display:none;}
+  .sidebar-overlay.show{display:block;}
+
+  .messages{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:14px;}
+  .msg{display:flex;gap:8px;align-items:flex-start;max-width:640px;}
+  .msg.user{flex-direction:row-reverse;align-self:flex-end;}
+  .msg-avatar{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;flex-shrink:0;}
+  .msg.ai .msg-avatar{background:#e8e5fe;color:#534AB7;}
+  .msg.user .msg-avatar{background:#d0e8ff;color:#185FA5;}
+  .msg-bubble{padding:9px 13px;border-radius:14px;font-size:13.5px;line-height:1.6;max-width:500px;}
+  .msg.ai .msg-bubble{background:var(--bubble-ai);border:0.5px solid var(--border-light);border-radius:4px 14px 14px 14px;}
+  .msg.user .msg-bubble{background:var(--accent);color:#fff;border-radius:14px 4px 14px 14px;}
+  .typing-dot{display:inline-block;width:5px;height:5px;border-radius:50%;background:var(--text-secondary);animation:blink 1.2s infinite;margin:0 2px;}
+  .typing-dot:nth-child(2){animation-delay:0.2s;}
+  .typing-dot:nth-child(3){animation-delay:0.4s;}
+  @keyframes blink{0%,80%,100%{opacity:0.2;}40%{opacity:1;}}
+
+  .input-bar{padding:10px 14px 14px;background:var(--bg-primary);border-top:0.5px solid var(--border-light);display:flex;gap:6px;align-items:flex-end;}
+  .input-bar textarea{flex:1;resize:none;border:0.5px solid var(--border-mid);border-radius:10px;padding:8px 12px;font-size:13.5px;font-family:inherit;background:var(--bg-secondary);color:var(--text-primary);outline:none;min-height:38px;max-height:110px;line-height:1.5;transition:border-color 0.15s;}
+  .input-bar textarea:focus{border-color:var(--accent);}
+  .input-bar textarea::placeholder{color:var(--text-hint);}
+  .send-btn{width:36px;height:36px;border-radius:9px;border:none;background:var(--accent);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:15px;transition:opacity 0.15s;}
+  .send-btn:disabled{opacity:0.35;cursor:default;}
+  .send-btn:hover:not(:disabled){opacity:0.82;}
+
+  .empty-chat{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;color:var(--text-secondary);font-size:13px;padding:32px;text-align:center;}
+  .empty-icon{font-size:36px;opacity:0.25;margin-bottom:4px;}
+  .suggestion-chips{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-top:10px;}
+  .chip{padding:6px 12px;border-radius:20px;border:0.5px solid var(--border-mid);background:var(--bg-primary);font-size:12px;cursor:pointer;color:var(--text-secondary);transition:all 0.15s;font-family:inherit;}
+  .chip:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-light);}
+
+  .img-panel{padding:16px;overflow-y:auto;display:flex;flex-direction:column;gap:16px;}
+  .img-controls{background:var(--bg-primary);border:0.5px solid var(--border-light);border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:12px;}
+  .field-label{font-size:12px;color:var(--text-secondary);font-weight:500;display:block;margin-bottom:4px;}
+  .img-controls textarea{width:100%;resize:vertical;min-height:72px;border:0.5px solid var(--border-mid);border-radius:8px;padding:9px 12px;font-size:13.5px;font-family:inherit;background:var(--bg-secondary);color:var(--text-primary);outline:none;}
+  .img-controls textarea:focus{border-color:var(--accent);}
+  .img-controls textarea::placeholder{color:var(--text-hint);}
+  .style-pills{display:flex;flex-wrap:wrap;gap:5px;}
+  .style-pill{padding:4px 11px;border-radius:20px;border:0.5px solid var(--border-mid);background:transparent;font-size:11.5px;cursor:pointer;color:var(--text-secondary);transition:all 0.15s;font-family:inherit;}
+  .style-pill.selected{background:var(--accent-light);border-color:var(--accent);color:var(--accent-text);font-weight:500;}
+  .gen-btn{padding:9px 18px;border-radius:8px;border:none;background:var(--accent);color:#fff;font-size:13.5px;font-weight:500;cursor:pointer;font-family:inherit;transition:opacity 0.15s;align-self:flex-start;}
+  .gen-btn:hover:not(:disabled){opacity:0.85;}
+  .gen-btn:disabled{opacity:0.4;cursor:default;}
+
+  .img-result{background:var(--bg-primary);border:0.5px solid var(--border-light);border-radius:12px;padding:16px;}
+  .result-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;}
+  .result-label{font-size:12px;color:var(--text-secondary);}
+  .download-btn{display:none;padding:5px 12px;border-radius:7px;border:0.5px solid var(--border-mid);background:transparent;font-size:12px;cursor:pointer;color:var(--text-secondary);font-family:inherit;transition:all 0.15s;align-items:center;gap:5px;}
+  .download-btn.visible{display:flex;}
+  .download-btn:hover{background:var(--bg-secondary);}
+  .img-placeholder{height:240px;background:var(--bg-secondary);border-radius:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;color:var(--text-hint);font-size:13px;}
+  .img-loading{height:240px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;color:var(--text-secondary);font-size:13px;}
+  .spinner{width:28px;height:28px;border:2.5px solid var(--border-light);border-top-color:var(--accent);border-radius:50%;animation:spin 0.8s linear infinite;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+  .gen-image-wrap img{width:100%;display:block;border-radius:8px;}
+  .img-caption{margin-top:8px;font-size:12px;color:var(--text-secondary);font-style:italic;line-height:1.5;}
+  .error-msg{font-size:12.5px;padding:7px 12px;background:var(--danger-bg);border-radius:7px;border:0.5px solid var(--danger-border);color:var(--danger-text);}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="header">
+    <div class="logo">MultiModal AI <span>· NLP Activity 10</span></div>
+    <div class="mode-tabs">
+      <button class="mode-tab active" onclick="switchMode('chat')">💬 Chat</button>
+      <button class="mode-tab" onclick="switchMode('image')">🖼 Image Gen</button>
+    </div>
+    <div class="header-right">
+      <span class="free-badge">100% Free</span>
+      <button class="icon-btn" onclick="toggleSidebar()" title="Chat history">📋</button>
+      <button class="icon-btn" onclick="toggleDark()" id="dark-btn" title="Toggle dark mode">🌙</button>
+    </div>
+  </div>
+
+  <div class="main">
+    <div class="sidebar-overlay" id="overlay" onclick="closeSidebar()"></div>
+
+    <div class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        Chat history
+        <button class="sidebar-clear" onclick="clearHistory()">Clear all</button>
+      </div>
+      <div class="sidebar-list" id="sidebar-list">
+        <div class="sidebar-empty">No messages yet</div>
+      </div>
+    </div>
+
+    <!-- CHAT PANEL -->
+    <div class="panel active" id="chat-panel">
+      <div class="messages" id="messages">
+        <div class="empty-chat" id="empty-state">
+          <div class="empty-icon">🤖</div>
+          <strong style="font-size:15px;color:var(--text-primary)">Ask me anything</strong>
+          <div>Powered by LLaMA 3.3 via Groq</div>
+          <div class="suggestion-chips">
+            <button class="chip" onclick="sendChip(this)">Explain NLP simply</button>
+            <button class="chip" onclick="sendChip(this)">What is a Large Language Model?</button>
+            <button class="chip" onclick="sendChip(this)">How does image generation work?</button>
+            <button class="chip" onclick="sendChip(this)">Give me a fun AI fact</button>
+          </div>
+        </div>
+      </div>
+      <div class="input-bar">
+        <textarea id="chat-input" placeholder="Type a message..." rows="1" onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
+        <button class="send-btn" id="send-btn" onclick="sendMessage()">&#10148;</button>
+      </div>
+    </div>
+
+    <!-- IMAGE GEN PANEL -->
+    <div class="panel" id="image-panel">
+      <div class="img-panel">
+        <div class="img-controls">
+          <div>
+            <label class="field-label">Image prompt</label>
+            <textarea id="img-prompt" placeholder="Describe the image you want... e.g. 'A futuristic city at sunset with flying cars'"></textarea>
+          </div>
+          <div>
+            <label class="field-label">Style</label>
+            <div class="style-pills">
+              <button class="style-pill selected" onclick="selectStyle(this)">Photorealistic</button>
+              <button class="style-pill" onclick="selectStyle(this)">Anime</button>
+              <button class="style-pill" onclick="selectStyle(this)">Oil painting</button>
+              <button class="style-pill" onclick="selectStyle(this)">Watercolor</button>
+              <button class="style-pill" onclick="selectStyle(this)">Pixel art</button>
+              <button class="style-pill" onclick="selectStyle(this)">3D render</button>
+              <button class="style-pill" onclick="selectStyle(this)">Sketch</button>
+            </div>
+          </div>
+          <button class="gen-btn" id="gen-btn" onclick="generateImage()">Generate image ✦</button>
+        </div>
+        <div class="img-result">
+          <div class="result-top">
+            <div class="result-label">Result · via Pollinations.ai (free)</div>
+            <button class="download-btn" id="download-btn" onclick="downloadImage()">⬇ Download</button>
+          </div>
+          <div id="img-output">
+            <div class="img-placeholder">
+              <span style="font-size:32px;opacity:0.25">🖼</span>
+              <span>Your generated image will appear here</span>
+            </div>
+          </div>
+          <div class="img-caption" id="img-caption" style="display:none"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  let chatHistory = [];
+  let isLoading = false;
+  let selectedStyle = 'Photorealistic';
+  let isDark = false;
+  let currentImageUrl = null;
+  let currentImagePrompt = '';
+  let sidebarOpen = false;
+
+  function toggleDark() {
+    isDark = !isDark;
+    document.body.classList.toggle('dark', isDark);
+    document.getElementById('dark-btn').textContent = isDark ? '☀️' : '🌙';
+  }
+
+  function toggleSidebar() {
+    sidebarOpen = !sidebarOpen;
+    document.getElementById('sidebar').classList.toggle('open', sidebarOpen);
+    document.getElementById('overlay').classList.toggle('show', sidebarOpen);
+  }
+
+  function closeSidebar() {
+    sidebarOpen = false;
+    document.getElementById('sidebar').classList.remove('open');
+    document.getElementById('overlay').classList.remove('show');
+  }
+
+  function clearHistory() {
+    chatHistory = [];
+    document.getElementById('sidebar-list').innerHTML = '<div class="sidebar-empty">No messages yet</div>';
+  }
+
+  function addToSidebar(role, text) {
+    const list = document.getElementById('sidebar-list');
+    const empty = list.querySelector('.sidebar-empty');
+    if (empty) empty.remove();
+    const item = document.createElement('div');
+    item.className = 'sidebar-item';
+    item.innerHTML = `<div class="si-role">${role === 'user' ? 'You' : 'AI'}</div><div class="si-text">${escHtml(text)}</div>`;
+    list.appendChild(item);
+    list.scrollTop = list.scrollHeight;
+  }
+
+  function switchMode(mode) {
+    document.querySelectorAll('.mode-tab').forEach((t, i) => {
+      t.classList.toggle('active', (mode === 'chat' && i === 0) || (mode === 'image' && i === 1));
+    });
+    document.getElementById('chat-panel').classList.toggle('active', mode === 'chat');
+    document.getElementById('image-panel').classList.toggle('active', mode === 'image');
+  }
+
+  function selectStyle(btn) {
+    document.querySelectorAll('.style-pill').forEach(p => p.classList.remove('selected'));
+    btn.classList.add('selected');
+    selectedStyle = btn.textContent;
+  }
+
+  function autoResize(ta) {
+    ta.style.height = 'auto';
+    ta.style.height = Math.min(ta.scrollHeight, 110) + 'px';
+  }
+
+  function handleKey(e) {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+  }
+
+  function sendChip(btn) {
+    document.getElementById('chat-input').value = btn.textContent;
+    sendMessage();
+  }
+
+  function escHtml(t) {
+    return String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
+  }
+
+  function appendMsg(role, content, isStreaming) {
+    const empty = document.getElementById('empty-state');
+    if (empty) empty.remove();
+    const container = document.getElementById('messages');
+    const wrap = document.createElement('div');
+    wrap.className = `msg ${role}`;
+    wrap.innerHTML = `<div class="msg-avatar">${role === 'user' ? 'You' : 'AI'}</div><div class="msg-bubble">${isStreaming ? '<span class="typing-dot"></span><span class="typing-dot"></span><span class="typing-dot"></span>' : escHtml(content)}</div>`;
+    container.appendChild(wrap);
+    container.scrollTop = container.scrollHeight;
+    return wrap.querySelector('.msg-bubble');
+  }
+
+  // Chat calls our own backend /api/chat — key stays hidden on server
+  async function sendMessage() {
+    const input = document.getElementById('chat-input');
+    const text = input.value.trim();
+    if (!text || isLoading) return;
+    isLoading = true;
+    document.getElementById('send-btn').disabled = true;
+    input.value = '';
+    input.style.height = 'auto';
+
+    appendMsg('user', text);
+    addToSidebar('user', text);
+    chatHistory.push({ role: 'user', content: text });
+
+    const aiBubble = appendMsg('ai', '', true);
+    try {
+      const resp = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messages: chatHistory })
+      });
+      const data = await resp.json();
+      if (data.error) throw new Error(data.error);
+      aiBubble.innerHTML = escHtml(data.reply);
+      chatHistory.push({ role: 'assistant', content: data.reply });
+      addToSidebar('ai', data.reply);
+    } catch(err) {
+      aiBubble.innerHTML = `<span class="error-msg">⚠ ${err.message}</span>`;
+    }
+    isLoading = false;
+    document.getElementById('send-btn').disabled = false;
+    document.getElementById('messages').scrollTop = 9999;
+  }
+
+  // Image gen via Pollinations.ai — no key needed at all
+  async function generateImage() {
+    const promptText = document.getElementById('img-prompt').value.trim();
+    if (!promptText) { alert('Please enter an image prompt first.'); return; }
+
+    const btn = document.getElementById('gen-btn');
+    btn.disabled = true;
+    btn.textContent = 'Generating...';
+
+    const output = document.getElementById('img-output');
+    const caption = document.getElementById('img-caption');
+    const dlBtn = document.getElementById('download-btn');
+    output.innerHTML = `<div class="img-loading"><div class="spinner"></div><span>Generating your image...</span></div>`;
+    caption.style.display = 'none';
+    dlBtn.classList.remove('visible');
+    currentImageUrl = null;
+
+    const fullPrompt = `${promptText}, ${selectedStyle} style, high quality, detailed`;
+    const seed = Math.floor(Math.random() * 999999);
+    const imageUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(fullPrompt)}?width=512&height=512&seed=${seed}&nologo=true`;
+
+    currentImageUrl = imageUrl;
+    currentImagePrompt = promptText;
+
+    output.innerHTML = `<div class="gen-image-wrap"><img src="${imageUrl}" alt="${escHtml(promptText)}" crossorigin="anonymous" onload="onImageLoaded()" onerror="onImageError()" /></div>`;
+    caption.textContent = `"${promptText}" — ${selectedStyle} style`;
+    caption.style.display = 'block';
+
+    btn.disabled = false;
+    btn.textContent = 'Generate image ✦';
+  }
+
+  function onImageLoaded() {
+    document.getElementById('download-btn').classList.add('visible');
+  }
+
+  function onImageError() {
+    document.getElementById('img-output').innerHTML = `<div class="error-msg">⚠ Image failed to load. Try a different prompt or click Generate again.</div>`;
+  }
+
+  async function downloadImage() {
+    if (!currentImageUrl) return;
+    try {
+      const resp = await fetch(currentImageUrl);
+      const blob = await resp.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = (currentImagePrompt.slice(0, 40).replace(/[^a-z0-9]/gi, '_') || 'generated_image') + '.png';
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      window.open(currentImageUrl, '_blank');
+    }
+  }
+</script>
+</body>
+</html>
